@@ -1,0 +1,30 @@
+
+name: Build SngTrans macOS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - name: Download source code
+        uses: actions/checkout@v4
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build SngTrans app and DMG
+        run: bash build.sh
+
+      - name: Upload Mac application
+        uses: actions/upload-artifact@v4
+        with:
+          name: SngTrans-Mac
+          path: |
+            dist/SngTrans.app
+            dist/SngTrans.dmg
+          if-no-files-found: error
