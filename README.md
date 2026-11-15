@@ -1,15 +1,23 @@
 # SngTrans cho macOS (Swift)
 
+[**⬇ Tải SngTrans cho Mac**](https://github.com/tannhaii2309-lang/macsng/releases/latest/download/SngTrans.dmg)
+(file `.dmg`, macOS 13 trở lên, chip Apple và Intel) · [Trang tải và hướng dẫn](https://tannhaii2309-lang.github.io/macsng/)
+
 Chạy ngầm ở thanh menu. Bôi đen chữ ở bất kỳ app nào là hiện thẻ dịch ngay cạnh con trỏ.
 
 ## Tạo app
-Cần máy Mac (macOS 13+) có **Xcode** (hoặc chỉ Command Line Tools: `xcode-select --install`).
+Cần máy Mac (macOS 13+) có **Xcode** hoặc Command Line Tools (`xcode-select --install`).
 
-    ./build.sh
+| Cách | Làm gì |
+|---|---|
+| Bấm đúp `build.command` | Tạo `dist/SngTrans.app` và `dist/SngTrans.dmg` (chạy cả chip Apple lẫn Intel), rồi mở thư mục `dist`. Lần đầu nếu bị chặn: chuột phải > Open. |
+| Bấm đúp `run.command` | Chạy thử từ mã nguồn, cửa sổ in nhật ký lỗi. |
+| Terminal: `./build.sh` | Giống `build.command`. |
 
-Ra `dist/SngTrans.app` và `dist/SngTrans.dmg` (chạy cả chip Apple lẫn Intel).
-Chạy thử nhanh không đóng gói: `swift run`.
-Không có Mac: đẩy thư mục này lên GitHub, tab **Actions > Build macOS app > Run workflow**, tải `SngTrans.dmg` ở mục Artifacts.
+**Không có Mac:** đẩy thư mục này lên GitHub (kho riêng, hoặc để vào thư mục `mac/` rồi chuyển `.github/workflows/mac.yml` ra gốc kho và thêm `working-directory: mac` cho các bước build).
+Tab **Actions > Build macOS app > Run workflow** > gõ phiên bản (vd `1.0.1`). Khoảng 5 phút sau, trang **Releases** có
+`SngTrans.dmg`, `SngTrans-mac.zip` và file `.sha256`. Cách khác: tạo tag `mac-v1.0.1`.
+Bản Mac không chiếm mục "Latest", nên link tải và tự cập nhật của bản Windows vẫn nguyên.
 
 ## Lần đầu mở
 1. Kéo `SngTrans.app` vào **Applications**. Vì chưa ký bằng Apple Developer, bấm **chuột phải > Open > Open** lần đầu.
@@ -23,8 +31,9 @@ Không có Mac: đẩy thư mục này lên GitHub, tab **Actions > Build macOS 
 ## Dùng
 - Bôi đen (kéo chuột, nhấp đúp/ba) → thẻ dịch hiện ngay.
 - `⌥1` dịch phần đang chọn, `⌥2` bật/tắt tự dịch. `Esc` hoặc bấm ra ngoài để đóng.
-- Trên thẻ: đọc to, sao chép, ghim, đóng.
-- Menu: chọn ngôn ngữ đích, chạy cùng macOS.
+- Trên thẻ: lưu ghi chú (dấu trang), đọc to, sao chép, ghim, đóng; tick **Không tự dịch ở <app>** để loại app đó.
+- Menu: chọn ngôn ngữ đích, chạy cùng macOS, **Ghi chú và chặn app** (xem, xoá, xuất CSV, bỏ chặn), **Kiểm tra cập nhật** (app cũng tự kiểm tra khi mở).
+- Dữ liệu nằm ở `~/Library/Application Support/SngTrans` (`notes.json`, `blocked.json`).
 - Chữ đã ở đúng ngôn ngữ đích thì tự dịch sang tiếng Anh (hoặc tiếng Việt nếu đích là Anh).
 
 ## Cấu trúc
@@ -36,5 +45,9 @@ Không có Mac: đẩy thư mục này lên GitHub, tab **Actions > Build macOS 
       Translator.swift        Google Translate + cache + dự phòng máy chủ
       Card.swift              thẻ dịch (SwiftUI trong NSPanel không cướp focus)
       HotKey.swift            phím tắt toàn hệ thống
+      Store.swift             ghi chú, danh sách chặn app, xuất CSV
+      ManagerWindow.swift     cửa sổ Ghi chú / Chặn app
+      Updater.swift           kiểm tra bản mới trên GitHub Releases
+      Links.swift             các đường link (repo, trang web, link tải .dmg)
 
-Chưa có so với bản Windows: ghi chú, chặn app, tự cập nhật (nên dùng Sparkle), đổi phím tắt.
+Chưa có so với bản Windows: đổi phím tắt trong cài đặt và tự thay app khi cập nhật (hiện chỉ mở link tải).

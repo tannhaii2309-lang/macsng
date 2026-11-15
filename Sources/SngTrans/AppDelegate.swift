@@ -31,7 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         wasTrusted = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
 
         watcher.autoEnabled = auto
-        watcher.onText = { [weak self] t in self?.card.show(text: t) }
+        watcher.onText = { [weak self] s in self?.card.show(s) }
         watcher.onOutsideClick = { [weak self] in self?.card.hideIfNotPinned() }
         watcher.onEscape = { [weak self] in self?.card.hideIfNotPinned() }
         watcher.start()
@@ -39,6 +39,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // ⌥1 dịch ngay phần đang chọn, ⌥2 bật/tắt tự dịch
         hk1 = HotKey(keyCode: UInt32(kVK_ANSI_1), modifiers: UInt32(optionKey)) { [weak self] in self?.translateNow() }
         hk2 = HotKey(keyCode: UInt32(kVK_ANSI_2), modifiers: UInt32(optionKey)) { [weak self] in self?.toggleAuto() }
+
+        // Kiểm tra bản mới 20 giây sau khi mở (im lặng nếu đã là bản mới nhất)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) { Updater.check(silent: true) }
 
         // Người dùng cấp quyền xong thì tự nạp lại bộ theo dõi, không cần mở lại app
         Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
@@ -80,7 +83,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let login = item("Chạy cùng macOS", #selector(toggleLogin))
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
+        menu.addItem(item("Ghi chú và chặn app…", #selector(openManager)))
         menu.addItem(item("Cấp quyền Trợ năng…", #selector(openAccessibility)))
+        menu.addItem(item("Kiểm tra cập nhật…", #selector(checkUpdate)))
+        menu.addItem(item("Trang tải và hướng dẫn…", #selector(openSite)))
         menu.addItem(.separator())
         menu.addItem(item("Thoát", #selector(quit), key: "q"))
         statusItem.menu = menu
@@ -97,8 +103,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func translateNow() {
         DispatchQueue.global().async { [weak self] in
-            guard let t = SelectedText.read() else { return }
-            DispatchQueue.main.async { self?.card.show(text: t) }
+            guard let s = SelectedText.read() else { return }
+            DispatchQueue.main.async { self?.card.show(s) }
         }
     }
 
@@ -128,6 +134,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.open(URL(string:
             "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
     }
+
+    @objc private func openManager() { ManagerWindow.show() }
+    @objc private func openSite() { NSWorkspace.shared.open(Links.site) }
+    @objc private func checkUpdate() { Updater.check(silent: false) }
 
     @objc private func quit() { NSApp.terminate(nil) }
 }

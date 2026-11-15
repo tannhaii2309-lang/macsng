@@ -9,6 +9,12 @@ final class CardModel: ObservableObject {
     @Published var loading = false
     @Published var error: String?
     @Published var pinned = false
+    @Published var noteSaved = false
+    @Published var appBlocked = false
+    var appID: String?
+    var appName: String?
+    var onNote: () -> Void = {}
+    var onToggleBlock: () -> Void = {}
     var onSpeak: () -> Void = {}
     var onCopy: () -> Void = {}
     var onClose: () -> Void = {}
@@ -34,6 +40,7 @@ struct CardView: View {
             HStack(spacing: 10) {
                 Text(langLabel).font(.caption).foregroundStyle(.secondary)
                 Spacer()
+                icon(m.noteSaved ? "bookmark.fill" : "bookmark") { m.onNote() }
                 icon("speaker.wave.2") { m.onSpeak() }
                 icon("doc.on.doc") { m.onCopy() }
                 icon(m.pinned ? "pin.fill" : "pin") { m.pinned.toggle() }
@@ -56,6 +63,16 @@ struct CardView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+            }
+            if let name = m.appName, m.appID != nil {
+                Button(action: { m.onToggleBlock() }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: m.appBlocked ? "checkmark.square.fill" : "square")
+                        Text("Không tự dịch ở \(name)")
+                    }
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(12)
@@ -105,6 +122,18 @@ final class CardController {
             NSPasteboard.general.setString(t, forType: .string)
         }
         model.onSpeak = { [weak self] in self?.speak() }
+        model.onNote = { [weak self] in
+            guard let self, let r = self.model.result, !self.model.noteSaved else { return }
+            Store.shared.addNote(Note(original: self.model.original, translation: r.text,
+                                      from: r.detected, to: r.target))
+            self.model.noteSaved = true
+        }
+        model.onToggleBlock = { [weak self] in
+            guard let self, let id = self.model.appID else { return }
+            if Store.shared.isBlocked(id) { Store.shared.unblock(id) }
+            else { Store.shared.block(id, name: self.model.appName ?? id) }
+            self.model.appBlocked = Store.shared.isBlocked(id)
+        }
         model.objectWillChange.receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.fit()
@@ -112,10 +141,15 @@ final class CardController {
             }.store(in: &bag)
     }
 
-    func show(text: String) {
+    func show(_ sel: Selection) {
+        let text = sel.text
         task?.cancel()
         synth.stopSpeaking(at: .immediate)
         model.pinned = false
+        model.noteSaved = false
+        model.appID = sel.bundleID
+        model.appName = sel.appName
+        model.appBlocked = Store.shared.isBlocked(sel.bundleID)
         model.original = text
         model.result = nil
         model.error = nil

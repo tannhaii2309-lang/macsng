@@ -3,6 +3,12 @@ import ApplicationServices
 
 /// Lấy chữ đang bôi đen: ưu tiên Accessibility API; app nào không hỗ trợ (Chrome, Electron...)
 /// thì gửi ⌘C rồi trả clipboard về như cũ.
+struct Selection {
+    let text: String
+    let bundleID: String?
+    let appName: String?
+}
+
 enum SelectedText {
     static let maxChars = 1500
     private static let terminals: Set<String> = [
@@ -11,13 +17,16 @@ enum SelectedText {
     ]
 
     /// Gọi trên luồng nền.
-    static func read() -> String? {
+    static func read() -> Selection? {
         let front = NSWorkspace.shared.frontmostApplication
         if front?.bundleIdentifier == Bundle.main.bundleIdentifier { return nil }
-        if let t = viaAccessibility() { return clean(t) }
+        func make(_ t: String) -> Selection {
+            Selection(text: t, bundleID: front?.bundleIdentifier, appName: front?.localizedName)
+        }
+        if let t = viaAccessibility() { return clean(t).map(make) }
         // ⌘C trong terminal là ngắt chương trình, nên bỏ qua
         if let id = front?.bundleIdentifier, terminals.contains(id) { return nil }
-        return viaCopy().flatMap(clean)
+        return viaCopy().flatMap(clean).map(make)
     }
 
     private static func clean(_ s: String) -> String? {
