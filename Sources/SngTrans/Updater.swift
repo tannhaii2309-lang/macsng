@@ -8,13 +8,16 @@ enum Updater {
         Task {
             let current = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
             do {
-                var req = URLRequest(url: URL(string: "https://api.github.com/repos/\(repo)/releases/latest")!)
+                var req = URLRequest(url: URL(string: "https://api.github.com/repos/\(repo)/releases?per_page=30")!)
                 req.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
                 req.timeoutInterval = 10
                 let (data, _) = try await URLSession.shared.data(for: req)
-                guard let j = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      var tag = j["tag_name"] as? String else { throw URLError(.badServerResponse) }
-                for p in ["mac-v", "v"] where tag.hasPrefix(p) { tag.removeFirst(p.count); break }
+                // "Latest" của repo là bản Windows, nên tìm bản Mac đầu tiên (mới nhất) có tag mac-v*
+                guard let list = try JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+                      let found = list.first(where: { ($0["tag_name"] as? String)?.hasPrefix("mac-v") == true
+                                                      && ($0["draft"] as? Bool) != true }),
+                      let raw = found["tag_name"] as? String else { throw URLError(.badServerResponse) }
+                let tag = String(raw.dropFirst("mac-v".count))
 
                 if tag.compare(current, options: .numeric) == .orderedDescending {
                     await MainActor.run {

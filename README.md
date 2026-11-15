@@ -1,6 +1,6 @@
 # SngTrans cho macOS (Swift)
 
-[**⬇ Tải SngTrans cho Mac**](https://github.com/tannhaii2309-lang/macsng/releases/latest/download/SngTrans.dmg)
+[**⬇ Tải SngTrans cho Mac**](https://github.com/tannhaii2309-lang/macsng/releases/download/mac-latest/SngTrans.dmg)
 (file `.dmg`, macOS 13 trở lên, chip Apple và Intel) · [Trang tải và hướng dẫn](https://tannhaii2309-lang.github.io/macsng/)
 
 Chạy ngầm ở thanh menu. Bôi đen chữ ở bất kỳ app nào là hiện thẻ dịch ngay cạnh con trỏ.
