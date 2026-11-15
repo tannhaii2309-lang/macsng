@@ -23,7 +23,7 @@ actor Translator {
         c.timeoutIntervalForRequest = 8
         c.httpAdditionalHeaders = ["User-Agent":
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"]
-        return c
+        return URLSession(configuration: c)
     }()
 
     func translate(_ q: String, to tl: String) async throws -> TranslationResult {

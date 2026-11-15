@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 struct Note: Codable, Identifiable, Equatable {
     var id = UUID()
