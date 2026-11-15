@@ -1,30 +1,53 @@
-
-name: Build SngTrans macOS
-
+name: Build macOS app
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
-
+    inputs:
+      version:
+        description: 'Số phiên bản (vd 1.0.1)'
+        required: false
+        default: '1.0.1'
+  push:
+    tags: ['mac-v*']
+permissions:
+  contents: write
 jobs:
   build:
-    runs-on: macos-15
-
+    runs-on: macos-14
     steps:
-      - name: Download source code
-        uses: actions/checkout@v4
-
-      - name: Show Swift version
-        run: swift --version
-
-      - name: Build SngTrans app and DMG
-        run: bash build.sh
-
-      - name: Upload Mac application
-        uses: actions/upload-artifact@v4
+      - uses: actions/checkout@v4
+      - name: Đặt số phiên bản
+        id: v
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then V="${{ github.event.inputs.version }}"; else V="${GITHUB_REF_NAME#mac-v}"; fi
+          if [ -z "$V" ]; then V=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Info.plist); fi
+          echo "v=$V" >> "$GITHUB_OUTPUT"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $V" Info.plist
+      - name: Build
+        run: bash ./build.sh
+      - name: Đóng gói và tạo mã sha256
+        run: |
+          cd dist
+          ditto -c -k --keepParent SngTrans.app SngTrans-mac.zip
+          shasum -a 256 SngTrans.dmg | awk '{print $1}' > SngTrans.dmg.sha256
+          shasum -a 256 SngTrans-mac.zip | awk '{print $1}' > SngTrans-mac.zip.sha256
+      - name: Phát hành
+        uses: softprops/action-gh-release@v2
         with:
-          name: SngTrans-Mac
-          path: |
-            dist/SngTrans.app
+          tag_name: mac-v${{ steps.v.outputs.v }}
+          name: SngTrans Mac ${{ steps.v.outputs.v }}
+          make_latest: false     # giữ "Latest" cho bản Windows, tránh làm hỏng link tải và tự cập nhật của Windows
+          files: |
             dist/SngTrans.dmg
-          if-no-files-found: error
+            dist/SngTrans-mac.zip
+            dist/*.sha256
+      - name: Cập nhật bản cố định mac-latest (link tải luôn dùng được)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mac-latest
+          name: SngTrans Mac (bản mới nhất)
+          make_latest: false
+          overwrite_files: true
+          body: Link tải cố định, luôn là bản Mac mới nhất (${{ steps.v.outputs.v }}).
+          files: |
+            dist/SngTrans.dmg
+            dist/SngTrans-mac.zip
